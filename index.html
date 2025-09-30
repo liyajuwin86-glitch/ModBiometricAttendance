@@ -1,61 +1,100 @@
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Attendance Log</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f2f5;
-            color: #1c1e21;
-        }
-        .container {
-            background-color: #ffffff;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: 90%;
-            max-width: 400px;
-        }
-        h1 {
-            color: #0d6efd;
-            margin-bottom: 24px;
-        }
-        .log-item {
-            font-size: 1.2rem;
-            margin: 12px 0;
-            padding: 8px;
-            border-left: 4px solid #0d6efd;
-            background-color: #f8f9fa;
-            text-align: left;
-        }
-        .log-item span {
-            font-weight: bold;
-            color: #333;
-        }
-        #timestamp {
-            margin-top: 20px;
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Fingerprint Attendance Log</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    h2 {
+      text-align: center;
+      background: #333;
+      color: white;
+      padding: 15px;
+      margin: 0;
+    }
+    table {
+      width: 90%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background: #333;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    .status-authorized {
+      color: green;
+      font-weight: bold;
+    }
+    .status-unauthorized {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
+  <h2>📋 Fingerprint Attendance Log</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="logTable"></tbody>
+  </table>
 
-    <div class="container">
-        <h1>Live Attendance Log</h1>
-        <div class="log-item">Name: <span id="log-name">Loading...</span></div>
-        <div class="log-item">ID: <span id="log-id">Loading...</span></div>
-        <div class="log-item">Status: <span id="log-status">Loading...</span></div>
-        <p id="timestamp">Last Updated: ---</p>
-    </div>
+  <script>
+    const CHANNEL_ID = "YOUR_CHANNEL_ID"; // replace with your channel ID
+    const READ_API_KEY = "61XG3VC5ZBSCPYRK"; // your read API key
+    const RESULTS = 50; // number of entries to fetch
 
-    <script src="script.js"></script>
+    async function fetchData() {
+      const url = https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=${RESULTS};
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const table = document.getElementById("logTable");
+        table.innerHTML = "";
+
+        data.feeds.forEach(feed => {
+          const row = document.createElement("tr");
+
+          const time = new Date(feed.created_at).toLocaleString();
+          const name = feed.field1 || "Unknown";
+          const id = feed.field2 || "-";
+          const status = feed.field3 || "Unknown";
+
+          row.innerHTML = `
+            <td>${time}</td>
+            <td>${name}</td>
+            <td>${id}</td>
+            <td class="status-${status.toLowerCase()}">${status}</td>
+          `;
+          table.appendChild(row);
+        });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+
+    fetchData();
+    setInterval(fetchData, 1000); // refresh every 1 second
+  </script>
 </body>
 </html>
