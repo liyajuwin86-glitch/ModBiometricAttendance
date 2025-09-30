@@ -1,71 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Mode Biometric Attendance System</title>
-<style>
-  body { font-family: Arial, sans-serif; background: #f5f5f5; text-align:center; padding:20px; }
-  h1 { color: #333; }
-  table { margin: 0 auto; border-collapse: collapse; width: 80%; background: #fff; }
-  th, td { border: 1px solid #888; padding: 8px; text-align: center; }
-  th { background-color: #333; color: #fff; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mode Biometric Attendance System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #fff;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #999;
+      text-align: center;
+    }
+    th {
+      background-color: #555;
+      color: #fff;
+    }
+    tr:nth-child(even) {
+      background-color: #eee;
+    }
+  </style>
 </head>
 <body>
+  <h1>Mode Biometric Attendance System</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="attendanceTable">
+      <tr><td colspan="3">Loading...</td></tr>
+    </tbody>
+  </table>
 
-<h1>Mode Biometric Attendance System</h1>
-<h2>Live Attendance Log</h2>
+  <script>
+    const channelID = "3095006"; // Your ThingSpeak channel ID
+    const readAPIKey = "61XG3VC5ZBSCPYRK"; // Your Read API Key
+    const refreshInterval = 5000; // 5 seconds
 
-<table id="attendanceTable">
-  <thead>
-    <tr>
-      <th>Timestamp</th>
-      <th>Name</th>
-      <th>ID</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- Data will be inserted here -->
-  </tbody>
-</table>
+    async function fetchData() {
+      try {
+        const url = `https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=20`;
+        const response = await fetch(url);
+        const data = await response.json();
 
-<script>
-const channelID = "3095006"; // Your ThingSpeak channel ID
-const readAPIKey = "61XG3VC5ZBSCPYRK"; // Your ThingSpeak read API key
-const updateInterval = 5000; // milliseconds
+        const tableBody = document.getElementById("attendanceTable");
+        tableBody.innerHTML = ""; // clear previous rows
 
-async function fetchData() {
-  try {
-    const url = `https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=50`;
-    const response = await fetch(url);
-    const data = await response.json();
-    const feeds = data.feeds;
-    const tableBody = document.querySelector("#attendanceTable tbody");
-    tableBody.innerHTML = ""; // Clear previous table
+        // Loop through feeds from oldest to newest
+        data.feeds.forEach(feed => {
+          if (feed.field1 && feed.field2 && feed.field3) {
+            const row = document.createElement("tr");
+            const nameCell = document.createElement("td");
+            nameCell.textContent = feed.field1;
+            const idCell = document.createElement("td");
+            idCell.textContent = feed.field2;
+            const statusCell = document.createElement("td");
+            statusCell.textContent = feed.field3;
 
-    feeds.forEach(feed => {
-      const row = document.createElement("tr");
-      const timestamp = new Date(feed.created_at).toLocaleString();
-      const name = feed.field1 || "-";
-      const id = feed.field2 || "-";
-      const status = feed.field3 || "-";
+            row.appendChild(nameCell);
+            row.appendChild(idCell);
+            row.appendChild(statusCell);
+            tableBody.appendChild(row);
+          }
+        });
 
-      row.innerHTML = `<td>${timestamp}</td><td>${name}</td><td>${id}</td><td>${status}</td>`;
-      tableBody.appendChild(row);
-    });
-  } catch (error) {
-    console.error("Error fetching data:", error);
-  }
-}
+        // If no data, show placeholder
+        if (tableBody.children.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="3">No attendance yet</td></tr>';
+        }
 
-// Initial fetch
-fetchData();
+      } catch (err) {
+        console.error("Error fetching ThingSpeak data:", err);
+        document.getElementById("attendanceTable").innerHTML = '<tr><td colspan="3">Error loading data</td></tr>';
+      }
+    }
 
-// Refresh every 5 seconds
-setInterval(fetchData, updateInterval);
-</script>
-
+    // Initial fetch
+    fetchData();
+    // Refresh every 5 seconds
+    setInterval(fetchData, refreshInterval);
+  </script>
 </body>
 </html>
-
